@@ -137,3 +137,32 @@ Proof.
   apply dst_refupdate.
 Qed.
 
+(* HTT *)
+
+Inductive HST {State: Type} (A: Type): (@Pre State) -> A -> (@Post State A) -> Type :=
+| hst_return: forall a: A, forall post: @Post State A,
+        HST A (fun h => post (a, h)) a post
+| hst_bind: forall B: Type, forall r: @Post State A, forall q: @Post State B, forall p: @Pre State, forall a: A, forall b: B,
+              HST B p b q ->
+              (forall b': B, HST A (fun h => q (b', h)) a r) ->
+              HST A p a r.
+
+Lemma hst_ref: forall x: nat, forall post: @Post Heap Addr, HST Addr (ref_f x post) x post.
+Admitted.
+Lemma hst_deref: forall l: Addr, forall post: @Post Heap nat, HST nat (deref_f l post) l post.
+Admitted.
+Lemma hst_refupdate: forall l: Addr, forall x: nat, forall post: @Post Heap unit,
+        HST unit (refupdate_f (l, x) post) tt post.
+Admitted.
+
+Lemma lemma_hst_swap_f : forall x y: Addr, forall post, HST unit (swap_f x y post) tt post.
+Proof.
+  intros.
+  eapply hst_bind. apply hst_deref.
+  intro x_value.
+  eapply hst_bind. apply hst_deref.
+  intro y_value.
+  eapply hst_bind. apply hst_refupdate.
+  intros useless.
+  apply hst_refupdate.
+Qed.
